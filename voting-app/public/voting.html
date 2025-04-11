@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vote</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto p-5">
+        <h1 class="text-4xl font-bold text-center">Vote</h1>
+        <form id="verificationForm" class="mt-10">
+            <div class="mb-4">
+                <label for="fingerprint" class="block text-gray-700">Fingerprint</label>
+                <input type="text" id="fingerprint" class="border rounded w-full py-2 px-3" required>
+            </div>
+            <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded">Verify</button>
+        </form>
+        <div id="verificationMessage" class="mt-4"></div>
+        <div id="candidates" class="mt-10"></div>
+    </div>
+    <script>
+        document.getElementById('verificationForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const fingerprint = document.getElementById('fingerprint').value;
+
+            const response = await fetch('/api/verify', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ fingerprint })
+            });
+
+            const result = await response.json();
+            document.getElementById('verificationMessage').innerText = result.message;
+
+            if (result.voter) {
+                loadCandidates(result.voter.aadhar);
+            }
+        });
+
+        async function loadCandidates(voterId) {
+            const response = await fetch('/api/candidates');
+            const candidates = await response.json();
+            const candidatesDiv = document.getElementById('candidates');
+            candidatesDiv.innerHTML = '';
+
+            candidates.forEach(candidate => {
+                const candidateCard = document.createElement('div');
+                candidateCard.className = 'border rounded p-4 mb-4';
+                candidateCard.innerHTML = `
+                    <h2 class="text-xl">${candidate.name}</h2>
+                    <img src="${candidate.image}" alt="${candidate.name}" class="w-full h-32 object-cover">
+                    <button class="bg-green-500 text-white px-4 py-2 mt-2" onclick="vote('${voterId}', ${candidate.id})">Vote</button>
+                `;
+                candidatesDiv.appendChild(candidateCard);
+            });
+        }
+
+        async function vote(voterId, candidateId) {
+            const response = await fetch('/api/vote', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ voterId, candidateId })
+            });
+
+            const result = await response.json();
+            alert(result.message);
+        }
+    </script>
+</body>
+</html>
